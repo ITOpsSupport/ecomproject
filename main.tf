@@ -24,10 +24,23 @@ resource "docker_container" "nginx" {
     container_path = "/etc/nginx/certs"
     host_path      = "/path/to/ssl/certs"
   }
+}
 
-  # Copy nginx.conf file to the container
-  provisioner "dockerfile" {
-    content = file("nginx.conf")
-    destination = "/etc/nginx/nginx.conf"
+# Execute command to copy nginx.conf file inside the container
+resource "null_resource" "copy_nginx_conf" {
+  triggers = {
+    container_id = docker_container.nginx.id
   }
+
+  provisioner "local-exec" {
+    command = <<EOF
+sleep 5
+docker cp nginx.conf ${docker_container.nginx.id}:/etc/nginx/nginx.conf
+EOF
+  }
+}
+
+# Output the NGINX container IP address
+output "nginx_container_ip" {
+  value = docker_container.nginx.ports.0.external
 }
